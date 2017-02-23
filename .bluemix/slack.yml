@@ -1,1 +1,5 @@
-
+---
+parameters:
+  api_token: ""
+  channel_name: ""
+  team_url: ""
