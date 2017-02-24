@@ -23,23 +23,7 @@ micro1-build:
   service_id: pipeline
   parameters:
     name: "micro1-{{name}}"
-    ui-pipeline: true
     configuration:
-      stages:
-      - name: ScriptStage
-        inputs:
-        - type: git
-          branch: master
-          service: "micro1-repo"
-        triggers:
-         - type: commit
-     jobs:
-     - name: BuildJob
-       type: builder
-       script: |
-         #!/bin/bash
-         echo "Test"
-      execute: true
     services: ["micro1-repo"]
 
 
