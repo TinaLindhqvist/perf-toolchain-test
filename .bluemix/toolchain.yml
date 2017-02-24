@@ -1,139 +1,74 @@
 name: "Performance Test Template"
 description: "Includes needed setup info"
-required:
- - deploy
- - github
 
-# Github repos
-catalog-api-repo:
-  service_id: githubpublic
+# GitLabs repos
+micro1-repo:
+service_id: hostedgit
   parameters:
-    repo_name: "{{github.parameters.catalog-api-repo_name}}"
-    repo_url: "{{github.parameters.catalog-api-repo_url}}"
-    type: clone
-    has_issues: false
-    enable_traceability: true
-  hidden: [form, description]
+   repo_name: "micro1-{{name}}"
+   repo_url: "https://git.stage1.ng.bluemix.net/tinalindhqvist64/phpApp4UITesting"
+   type: "clone"
+   has_issues: false
 
-orders-api-repo:
-  service_id: githubpublic
+micro2-repo:
+service_id: hostedgit
   parameters:
-    repo_name: "{{github.parameters.orders-api-repo_name}}"
-    repo_url: "{{github.parameters.orders-api-repo_url}}"
-    type: clone
-    has_issues: false
-    enable_traceability: true
-  hidden: [form, description]
-
-ui-repo:
-  service_id: githubpublic
-  parameters:
-    repo_name: "{{github.parameters.ui-repo_name}}"
-    repo_url: "{{github.parameters.ui-repo_url}}"
-    type: clone
-    has_issues: true
-    enable_traceability: true
-  hidden: [form, description]
+   repo_name: "micro2-{{name}}"
+   repo_url: "https://git.stage1.ng.bluemix.net/tinalindhqvist64/StaticHtmlApp4UITesting"
+   type: "clone"
+   has_issues: true
 
 # Pipelines
-ui-build:
+micro1-build:
   service_id: pipeline
   parameters:
-    name: "ui-{{name}}"
+    name: "micro1-{{name}}"
     ui-pipeline: true
     configuration:
-      content: $file(ui.pipeline.yml)
-      env:
-        SAUCE_LABS: "test"
-        UI_REPO: "ui-repo"
-        CF_APP_NAME: "{{deploy.parameters.ui-app-name}}"
-        QA_SPACE_NAME: "{{deploy.parameters.qa-space}}"
-        QA_ORG_NAME: "{{deploy.parameters.qa-organization}}"
-        QA_REGION_ID: "{{deploy.parameters.qa-region}}"
-        PROD_SPACE_NAME: "{{deploy.parameters.prod-space}}"
-        PROD_ORG_NAME: "{{deploy.parameters.prod-organization}}"
-        PROD_REGION_ID: "{{deploy.parameters.prod-region}}"
+      stages:
+      - name: ScriptStage
+        inputs:
+        - type: git
+          branch: master
+          service: "micro1-repo"
+        triggers:
+         - type: commit
+     jobs:
+     - name: BuildJob
+       type: builder
+       script: |
+         #!/bin/bash
+         echo "Test"
       execute: true
-    services: ["ui-repo", "test"]
-  hidden: [form, description]
+    services: ["micro1-repo"]
 
-catalog-api-build:
+
+micro2-build:
   service_id: pipeline
   parameters:
-    name: "catalog-api-{{name}}"
+    name: "micro2-{{name}}"
     configuration:
-      content: $file(catalog-api.pipeline.yml)
-      env:
-        SAUCE_LABS: "test"
-        CATALOG_API_REPO: "catalog-api-repo"
-        CF_APP_NAME: "{{deploy.parameters.catalog-app-name}}"
-        QA_SPACE_NAME: "{{deploy.parameters.qa-space}}"
-        QA_ORG_NAME: "{{deploy.parameters.qa-organization}}"
-        QA_REGION_ID: "{{deploy.parameters.qa-region}}"
-        PROD_SPACE_NAME: "{{deploy.parameters.prod-space}}"
-        PROD_ORG_NAME: "{{deploy.parameters.prod-organization}}"
-        PROD_REGION_ID: "{{deploy.parameters.prod-region}}"
-      execute: true
-    services: ["catalog-api-repo", "test"]
-  hidden: [form, description]
-
-orders-api-build:
-  service_id: pipeline
-  parameters:
-    name: "orders-api-{{name}}"
-    configuration:
-      content: $file(orders-api.pipeline.yml)
-      env:
-        SAUCE_LABS: "test"
-        ORDER_API_REPO: "orders-api-repo"
-        CF_APP_NAME: "{{deploy.parameters.orders-app-name}}"
-        QA_SPACE_NAME: "{{deploy.parameters.qa-space}}"
-        QA_ORG_NAME: "{{deploy.parameters.qa-organization}}"
-        QA_REGION_ID: "{{deploy.parameters.qa-region}}"
-        PROD_SPACE_NAME: "{{deploy.parameters.prod-space}}"
-        PROD_ORG_NAME: "{{deploy.parameters.prod-organization}}"
-        PROD_REGION_ID: "{{deploy.parameters.prod-region}}"
-      execute: true
-    services: ["orders-api-repo", "test"]
+    services: ["micro2-repo"]
 
 alerting:
   service_id: pagerduty
+  parameters:
+    api_key: ""
+    service_name: ""
+    user_email: ""
+    user_phone: ""
 
 dra:
   service_id: draservicebroker
-  include: dra.yml
+  parameters:
+   # criteria: $file(criteria.json)
 
 messaging:
   service_id: slack
-
-test:
-  service_id: saucelabs
+  parameters:
+    api_token: ""
+    channel_name: ""
+    team_url: ""
 
 webide:
   service_id: orion
-
-#Deployment
-deploy:
-  schema:
-    $ref: deploy.json
-  service-category: pipeline
-  parameters:
-    dev-space: dev
-    qa-space: qa
-    prod-space: prod
-    orders-app-name: "{{orders-api-repo.parameters.repo_name}}"
-    catalog-app-name: "{{catalog-api-repo.parameters.repo_name}}"
-    ui-app-name: "{{ui-repo.parameters.repo_name}}"
-
-#Github
-github:
-  schema:
-    $ref: hostedgit.json
-  service-category: githubpublic
-  parameters:
-    catalog-api-repo_name: "catalog-api-{{name}}"
-    catalog-api-repo_url: https://github.com/open-toolchain/Microservices_CatalogAPI
-    orders-api-repo_name: "orders-api-{{name}}"
-    orders-api-repo_url: https://github.com/open-toolchain/Microservices_OrdersAPI
-    ui-repo_name: "ui-{{name}}"
-    ui-repo_url: https://github.com/open-toolchain/Microservices_UI
